@@ -3,6 +3,8 @@ package mnemonic
 import (
 	"encoding/binary"
 	"hash/crc32"
+    "errors"
+    "bytes"
 )
 
 const DictSize = 1626
@@ -65,4 +67,50 @@ func (d *Dict) getChecksumWord(w *[25]string) string {
 	idx := sum % 24
 
 	return w[idx]
+}
+
+func indexOf(element string, data *[DictSize]string) (int) {
+   for k, v := range data {
+       if element == v {
+           return k
+       }
+   }
+   return -1    //not found.
+}
+
+// Decodes a mnemonic seed to a key
+func (d *Dict) Decode(seed []string) ( []byte, error ) {
+
+    wordCount := len(seed)
+    if wordCount == 13 || wordCount == 25 {
+        // Ignoring the checksumWord for now
+        wordCount = wordCount-1
+    }
+
+    buf := new(bytes.Buffer)
+    for i := 0; i <  wordCount; i+= 3 {
+        w1 := indexOf(seed[i], d.Table)
+        if w1 == -1 {
+            return buf.Bytes(), errors.New("Invalid word in seed")
+        }
+
+        w2 := indexOf(seed[i+1], d.Table)
+        if w2 == -1 {
+            return buf.Bytes(), errors.New("Invalid word in seed")
+        }
+        w2x := DictSize * ( ( ( DictSize - w1 ) + w2 ) % DictSize )
+
+        w3 := indexOf(seed[i+2], d.Table)
+        if w3 == -1 {
+            return buf.Bytes(), errors.New("Invalid word in seed")
+        }
+        w3x := DictSize * DictSize * ( ( ( DictSize - w2 ) + w3 ) % DictSize )
+
+        x := w1 + w2x + w3x
+        err := binary.Write(buf, binary.LittleEndian, uint32(x))
+        if err != nil {
+            return buf.Bytes(), errors.New("binary.Write failed")
+        }
+    }
+    return buf.Bytes(), nil
 }
