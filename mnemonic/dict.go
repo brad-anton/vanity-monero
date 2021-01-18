@@ -57,6 +57,22 @@ func (d *Dict) Encode(key *[32]byte) *[25]string {
 	return w
 }
 
+func (d *Dict) GetChecksumWord(w []string) string {
+    if len(w) != 12 && len(w) != 24 {
+        // We only support mnemonics of 12 or 24 length, otherwise we return empty
+        return ""
+    }
+
+	h := crc32.NewIEEE()
+	for _, v := range w[:] {
+		r := string([]rune(v)[:d.UniquePrefixLength])
+		h.Write([]byte(r))
+	}
+	sum := h.Sum32()
+	idx := sum % 24
+	return w[idx]
+}
+
 func (d *Dict) getChecksumWord(w *[25]string) string {
 	h := crc32.NewIEEE()
 	for _, v := range w[:24] {
