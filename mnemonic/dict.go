@@ -58,7 +58,8 @@ func (d *Dict) Encode(key *[32]byte) *[25]string {
 }
 
 func (d *Dict) GetChecksumWord(w []string) string {
-    if len(w) != 12 && len(w) != 24 {
+    mnemonicLength := uint32(len(w))
+    if mnemonicLength != 12 && mnemonicLength != 24 {
         // We only support mnemonics of 12 or 24 length, otherwise we return empty
         return ""
     }
@@ -69,7 +70,7 @@ func (d *Dict) GetChecksumWord(w []string) string {
 		h.Write([]byte(r))
 	}
 	sum := h.Sum32()
-	idx := sum % 24
+	idx := sum % mnemonicLength
 	return w[idx]
 }
 
